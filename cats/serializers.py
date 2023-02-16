@@ -1,21 +1,26 @@
+import datetime as dt
 from rest_framework import serializers
 
-from .models import Achievement, AchievementCat, Cat, Owner
+from .models import Achievement, AchievementCat, Cat, Owner, CHOICES
 
 
 class AchievementSerializer(serializers.ModelSerializer):
+    achievement_name = serializers.CharField(source='name')
 
     class Meta:
         model = Achievement
-        fields = ('id', 'name')
+        fields = ('id', 'achievement_name')
 
 
 class CatSerializer(serializers.ModelSerializer):
     achievements = AchievementSerializer(many=True, required=False)
+    age = serializers.SerializerMethodField()
+    color = serializers.ChoiceField(choices=CHOICES)
 
     class Meta:
         model = Cat
-        fields = ('id', 'name', 'color', 'birth_year', 'owner', 'achievements')
+        fields = ('id', 'name', 'color', 'birth_year', 'owner', 'achievements',
+                  'age')
 
     def create(self, validated_data):
         # Если в исходном запросе не было поля achievements
@@ -37,6 +42,17 @@ class CatSerializer(serializers.ModelSerializer):
             AchievementCat.objects.create(
                 achievement=current_achievement, cat=cat)
         return cat
+    
+    def get_age(self, obj):
+        return dt.datetime.now().year - obj.birth_year
+
+
+class CatListSerializer(serializers.ModelSerializer):
+    color = serializers.ChoiceField(choices=CHOICES)
+    
+    class Meta:
+        model = Cat
+        fields = ('id', 'name', 'color')
 
 
 class OwnerSerializer(serializers.ModelSerializer):
